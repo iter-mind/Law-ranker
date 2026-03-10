@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CA Inter Law Ranker — May 2026</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Georgia, serif; background: #0f0f0f; color: #f1f0eb; min-height: 100vh; }
+
+  #app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+  /* HEADER */
+  #header { flex-shrink: 0; padding: 14px 16px 0 16px; background: #0f0f0f; }
+  .subtitle-tag { font-size: 9px; letter-spacing: 4px; color: #f97316; text-transform: uppercase; text-align: center; margin-bottom: 4px; }
+  h1 { font-size: 22px; font-weight: bold; color: #fef3c7; text-align: center; margin-bottom: 3px; }
+  .desc { font-size: 10px; color: #9ca3af; text-align: center; margin-bottom: 10px; }
+
+  /* LEGEND */
+  #legend { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-bottom: 10px; }
+  .legend-badge { font-size: 10px; padding: 2px 10px; border-radius: 20px; border: 1px solid; }
+
+  /* TABS */
+  #tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 10px; }
+  .tab-btn { padding: 7px 20px; border-radius: 8px; border: 2px solid #374151; background: transparent; color: #9ca3af; font-size: 12px; cursor: pointer; font-family: Georgia, serif; }
+  .tab-btn.active { border-color: #f97316; background: rgba(249,115,22,0.1); color: #f97316; font-weight: bold; }
+  .tab-subtitle { font-size: 8px; margin-top: 2px; color: #6b7280; }
+  .tab-btn.active .tab-subtitle { color: #fdba74; }
+
+  /* FILTERS */
+  #filters { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; padding: 0 16px 8px; flex-shrink: 0; background: #0f0f0f; }
+  input[type=text], select {
+    padding: 7px 12px; border-radius: 8px; border: 1px solid #374151;
+    background: #1f2937; color: #f1f0eb; font-size: 12px; font-family: Georgia, serif;
+  }
+  input[type=text] { width: 200px; }
+  select { min-width: 140px; }
+
+  /* COUNT */
+  #count { text-align: center; font-size: 11px; color: #6b7280; padding: 4px 0 6px; flex-shrink: 0; }
+
+  /* CARD LIST */
+  #card-list { flex: 1; overflow-y: auto; padding: 0 16px 20px; display: flex; flex-direction: column; gap: 6px; }
+  #card-list::-webkit-scrollbar { width: 4px; }
+  #card-list::-webkit-scrollbar-track { background: #1a1a1a; }
+  #card-list::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+
+  /* CARD */
+  .card { border-radius: 9px; padding: 10px 14px; cursor: pointer; border: 1px solid transparent; border-left-width: 4px; transition: opacity 0.1s; }
+  .card:hover { opacity: 0.9; }
+  .card-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .card-rank { font-size: 10px; color: #6b7280; font-family: monospace; min-width: 24px; }
+  .sec-badge { font-size: 11px; font-weight: bold; padding: 2px 7px; border-radius: 5px; font-family: monospace; min-width: 62px; text-align: center; }
+  .card-title { flex: 1; font-size: 13px; font-weight: 600; color: #f1f0eb; min-width: 140px; }
+  .tags { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+  .tag { font-size: 9px; padding: 2px 6px; border-radius: 10px; font-weight: 700; }
+  .freq-tag { border: 1px solid; font-size: 9px; padding: 2px 6px; border-radius: 10px; }
+  .arrow { color: #6b7280; font-size: 12px; margin-left: 4px; }
+  .card-detail { margin-top: 8px; padding-top: 8px; border-top: 1px solid #2d2d2d; display: none; }
+  .card-detail.open { display: block; }
+  .detail-ch { font-size: 10px; color: #f97316; margin-bottom: 3px; letter-spacing: 1px; }
+  .detail-note { font-size: 12px; color: #d1d5db; line-height: 1.65; }
+
+  /* COMPLEXITY COLORS */
+  .cx-High { background: #fee2e2; color: #b91c1c; }
+  .cx-Med  { background: #fef9c3; color: #92400e; }
+  .cx-Low  { background: #dcfce7; color: #166534; }
+  /* ROI COLORS */
+  .roi-Good { background: #d1fae5; color: #065f46; }
+  .roi-Med  { background: #dbeafe; color: #1e40af; }
+  .roi-Bad  { background: #f3f4f6; color: #6b7280; }
+
+  @media (max-width: 600px) {
+    input[type=text] { width: 150px; }
+    h1 { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <div class="subtitle-tag">CA Inter · Paper 2 · May 2026</div>
+    <h1>Corporate &amp; Other Laws</h1>
+    <div class="desc">Complete Section Ranker &middot; Frequency &middot; Complexity &middot; ROI</div>
+    <div id="legend">
+      <span class="legend-badge" style="color:#ef4444;border-color:#ef4444">🔴 MUST DO</span>
+      <span class="legend-badge" style="color:#f97316;border-color:#f97316">🟠 High Freq</span>
+      <span class="legend-badge" style="color:#ca8a04;border-color:#ca8a04">🟡 Moderate</span>
+      <span class="legend-badge" style="color:#3b82f6;border-color:#3b82f6">🔵 Occasional</span>
+      <span class="legend-badge" style="color:#6b7280;border-color:#6b7280">⚪ Rare/Skip</span>
+    </div>
+    <div id="tabs">
+      <button class="tab-btn active" onclick="switchTab('corporate',this)">
+        Corporate Laws
+        <div class="tab-subtitle">Sec 1–148 &amp; 379–393 · Companies Act 2013</div>
+      </button>
+      <button class="tab-btn" onclick="switchTab('other',this)">
+        Other Laws
+        <div class="tab-subtitle">GCA · IS · FEMA · LLP</div>
+      </button>
+    </div>
+  </div>
+
+  <div id="filters">
+    <input type="text" id="search" placeholder="Search section / keyword..." oninput="render()">
+    <select id="freqFilter" onchange="render()">
+      <option value="all">All Frequencies</option>
+      <option value="4">🔴 Must Do (4)</option>
+      <option value="3">🟠 High (3)</option>
+      <option value="2">🟡 Moderate (2)</option>
+      <option value="1">🔵 Occasional (1)</option>
+      <option value="0">⚪ Rare/Skip (0)</option>
+    </select>
+    <select id="chFilter" onchange="render()">
+      <option value="all">All Chapters</option>
+    </select>
+  </div>
+
+  <div id="count"></div>
+  <div id="card-list"></div>
+</div>
+
+<script>
+const FREQ = {
+  4: { label: "🔴 MUST DO", color: "#ef4444", bg: "#fef2f2", border: "#fca5a5" },
+  3: { label: "🟠 High Freq", color: "#f97316", bg: "#fff7ed", border: "#fdba74" },
+  2: { label: "🟡 Moderate", color: "#ca8a04", bg: "#fefce8", border: "#fde047" },
+  1: { label: "🔵 Occasional", color: "#3b82f6", bg: "#eff6ff", border: "#93c5fd" },
+  0: { label: "⚪ Rare/Skip", color: "#6b7280", bg: "#1f2937", border: "#374151" },
+};
+
+const corporate = [
+  // CH 1
+  { sec:"1", title:"Short Title, Commencement & Extent", ch:"Ch 1 · Introduction", freq:0, cx:"", roi:"", note:"Basic provision — not independently tested." },
+  { sec:"2", title:"Definitions", ch:"Ch 1 · Introduction", freq:3, cx:"Low", roi:"Good", note:"Holding/subsidiary/associate, OPC, small company, KMP, officer in default — MCQ goldmine. Memorise key ones." },
+  // CH 2
+  { sec:"3", title:"Formation / Kinds of Company", ch:"Ch 2 · Formation of Company", freq:1, cx:"Low", roi:"Med", note:"Public, private, OPC minimums — basic but appears in MCQs." },
+  { sec:"3A", title:"Members Severally Liable / Effect of Registration", ch:"Ch 2 · Formation of Company", freq:3, cx:"Low", roi:"Good", note:"Separate legal entity concept — Salomon v Salomon; frequently tested theory." },
+  { sec:"7", title:"Incorporation of Company", ch:"Ch 2 · Formation of Company", freq:2, cx:"Low", roi:"Med", note:"Documents for incorporation, declaration, CIN — occasionally appears." },
+  { sec:"8", title:"Formation of Section 8 Company (Non-Profit)", ch:"Ch 2 · Formation of Company", freq:3, cx:"Med", roi:"Good", note:"Charitable objects, restrictions, licence, conversion — tested regularly." },
+  { sec:"9", title:"Effects of Registration", ch:"Ch 2 · Formation of Company", freq:0, cx:"", roi:"", note:"Background provision — covered under Sec 3A concept." },
+  { sec:"10", title:"Effect of MOA/AOA (Binding Contract)", ch:"Ch 2 · Formation of Company", freq:1, cx:"Low", roi:"Med", note:"Statutory contract between company and members." },
+  { sec:"10A", title:"Commencement of Business", ch:"Ch 2 · Formation of Company", freq:3, cx:"Low", roi:"Good", note:"Declaration within 180 days, consequences of non-compliance — very concise, very frequently asked." },
+  { sec:"11", title:"(Omitted)", ch:"Ch 2 · Formation of Company", freq:0, cx:"", roi:"", note:"Section omitted from Act." },
+  { sec:"15", title:"Alteration of MOA/AOA to be Noted in Every Copy", ch:"Ch 2 · Formation of Company", freq:0, cx:"", roi:"", note:"Compliance provision — not tested independently." },
+  { sec:"16", title:"Rectification of Name (Direction to Change Name)", ch:"Ch 2 · Formation of Company", freq:2, cx:"Low", roi:"Med", note:"Identical/undesirable name — CG direction within 3 months, company has 6 months to comply." },
+  { sec:"17", title:"Right of Members to Copies of MOA/AOA/Resolutions", ch:"Ch 2 · Formation of Company", freq:0, cx:"", roi:"", note:"Rarely tested independently." },
+  { sec:"19", title:"Subsidiary Not to Hold Shares in Holding Company", ch:"Ch 2 · Formation of Company", freq:1, cx:"Low", roi:"Med", note:"Exception for trustee/nominee — occasionally tested." },
+  { sec:"22", title:"Execution of Bills, Cheques, Hundies etc.", ch:"Ch 2 · Formation of Company", freq:0, cx:"", roi:"", note:"Rarely tested." },
+  // CH 3 MOA & AOA
+  { sec:"4", title:"Memorandum of Association", ch:"Ch 3 · Memorandum & Articles of Association", freq:3, cx:"Med", roi:"Good", note:"Five clauses of MOA, contents, entrenchment — very frequently tested." },
+  { sec:"5", title:"Articles of Association", ch:"Ch 3 · Memorandum & Articles of Association", freq:3, cx:"Med", roi:"Good", note:"AOA contents, model articles, relationship with MOA — frequently tested." },
+  { sec:"6", title:"Act to Override MOA/AOA", ch:"Ch 3 · Memorandum & Articles of Association", freq:0, cx:"", roi:"", note:"Rarely tested independently." },
+  { sec:"12", title:"Registered Office of Company", ch:"Ch 3 · Memorandum & Articles of Association", freq:2, cx:"Low", roi:"Med", note:"15-day rule, 30-day verification, change procedure — usually MCQ." },
+  { sec:"13", title:"Alteration of Memorandum", ch:"Ch 3 · Memorandum & Articles of Association", freq:2, cx:"Med", roi:"Med", note:"SR + CG/NCLT/RD approval depending on clause — procedural but tested." },
+  { sec:"14", title:"Alteration of Articles", ch:"Ch 3 · Memorandum & Articles of Association", freq:3, cx:"Med", roi:"Good", note:"SR required, entrenchment provisions, retroactive effect on members — detailed, frequently asked." },
+  { sec:"18", title:"Conversion of Companies", ch:"Ch 3 · Memorandum & Articles of Association", freq:3, cx:"Med", roi:"Good", note:"Private to public, public to private, unlimited to limited — frequently tested with conditions." },
+  { sec:"20", title:"Service of Documents", ch:"Ch 3 · Memorandum & Articles of Association", freq:0, cx:"", roi:"", note:"Procedural — not tested independently." },
+  { sec:"21", title:"Authentication of Documents", ch:"Ch 3 · Memorandum & Articles of Association", freq:0, cx:"", roi:"", note:"Background provision." },
+  // CH 4 PROSPECTUS
+  { sec:"23", title:"Kinds of Issue (Public / Rights / Bonus / Private)", ch:"Ch 4 · Prospectus & Allotment of Securities", freq:1, cx:"Low", roi:"Med", note:"Classification of issues — MCQ context." },
+  { sec:"24", title:"Power of SEBI in Certain Cases", ch:"Ch 4 · Prospectus & Allotment of Securities", freq:0, cx:"", roi:"", note:"SEBI powers in public issues — background provision." },
+  { sec:"25", title:"Deemed Prospectus", ch:"Ch 4 · Prospectus & Allotment of Securities", freq:3, cx:"Med", roi:"Good", note:"Offer for sale by existing holder treated as prospectus — conceptually important, tested frequently." },
+  { sec:"26", title:"Contents/Matters in Prospectus", ch:"Ch 4 · Prospectus & Allotment of Securities", freq:2, cx:"Med", roi:"Med", note:"Mandatory disclosures in prospectus — usually list-type question." },
+  { sec:"27", title:"Variation in Terms of Contract in Prospectus", ch:"Ch 4 · Prospectus & Allotment of Securities", freq:1, cx:"Low", roi:"Med", note:"Approval by SR + consent of holders — occasionally asked." },
+  { sec:"28", title:"Offer for Sale by Certain Members", ch:"Ch 4 · Prospectus & Allotment of Securities", freq:0, cx:"", roi:"", note:"Rarely tested independently." },
+  { sec:"29", title:"Dematerialisation of Securities", ch:"Ch 4 · Prospectus & Allotment of Securities", freq:1, cx:"Low", roi:"Med", note:"Mandatory demat for listed companies — simple provision, MCQ." },
+  { sec:"30", title:"Advertisement of Prospectus", ch:"Ch 4 · Prospectus & Allotment of Securities", freq:0, cx:"", roi:"", note:"Conditions for advertisement — not independently tested." },
+  { sec:"31", title:"Shelf Prospectus", ch:"Ch 4 · Prospectus & Allotment of Securities", freq:3, cx:"Low", roi:"Good", note:"Valid for 1 year from first issue, information memorandum — concise, high frequency." },
+  { sec:"32", title:"Red Herring Prospectus", ch:"Ch 4 · Prospectus & Allotment of Securities", freq:2, cx:"Low", roi:"Med", note:"Filed before IPO, no price/quantum details — short, moderately tested." },
+  { sec:"33", title:"Abridged Prospectus", ch:"Ch 4 · Prospectus & Allotment of Securities", freq:3, cx:"Low", roi:"Good", note:"Memorandum attached to application form — very concise provision, frequently asked." },
+  { sec:"34", title:"Criminal Liability for Misstatement in Prospectus", ch:"Ch 4 · Prospectus & Allotment of Securities", freq:1, cx:"Low", roi:"Med", note:"Imprisonment + fine — occasionally appears alongside Sec 35." },
+  { sec:"35", title:"Civil Liability for Misstatement in Prospectus", ch:"Ch 4 · Prospectus & Allotment of Securities", freq:3, cx:"Med", roi:"Good", note:"Who is liable, available defences (due diligence, expert, withdrawal) — theory + application questions." },
+  { sec:"36", title:"Punishment for Fraudulently Inducing Persons to Invest", ch:"Ch 4 · Prospectus & Allotment of Securities", freq:0, cx:"", roi:"", note:"Penalty provision — rarely tested independently." },
+  { sec:"37", title:"Class Action Suit", ch:"Ch 4 · Prospectus & Allotment of Securities", freq:1, cx:"Med", roi:"Med", note:"Members/depositors can file class action against company — occasionally tested." },
+  { sec:"38", title:"Penalty for Personation for Acquisition of Securities", ch:"Ch 4 · Prospectus & Allotment of Securities", freq:0, cx:"", roi:"", note:"Penalty provision — not independently tested." },
+  { sec:"39", title:"Allotment of Securities by Company", ch:"Ch 4 · Prospectus & Allotment of Securities", freq:1, cx:"Low", roi:"Med", note:"Minimum subscription, refund on failure — occasionally tested." },
+  { sec:"40", title:"Securities to be Dealt in Stock Exchanges", ch:"Ch 4 · Prospectus & Allotment of Securities", freq:0, cx:"", roi:"", note:"Listing requirement — background provision." },
+  { sec:"41", title:"Global Depository Receipts (GDR)", ch:"Ch 4 · Prospectus & Allotment of Securities", freq:0, cx:"", roi:"", note:"GDR concept — rarely tested at Inter level." },
+  { sec:"42", title:"Private Placement", ch:"Ch 4 · Prospectus & Allotment of Securities", freq:3, cx:"High", roi:"Good", note:"200 persons per class per year, PAS-4 offer letter, 60-day allotment rule, separate bank A/c — complex, high frequency." },
+  // CH 5 SHARE CAPITAL
+  { sec:"43", title:"Kinds of Share Capital", ch:"Ch 5 · Share Capital & Debentures", freq:1, cx:"Low", roi:"Med", note:"Equity vs preference, CCPS, NCPS — basic classification." },
+  { sec:"44", title:"Nature of Shares/Debentures (Movable Property)", ch:"Ch 5 · Share Capital & Debentures", freq:0, cx:"", roi:"", note:"Shares as movable property — not independently tested." },
+  { sec:"45", title:"Numbering of Shares", ch:"Ch 5 · Share Capital & Debentures", freq:0, cx:"", roi:"", note:"Compliance provision — not tested." },
+  { sec:"46", title:"Certificate of Shares", ch:"Ch 5 · Share Capital & Debentures", freq:1, cx:"Low", roi:"Med", note:"Prima facie evidence, duplicate certificate — occasionally MCQ." },
+  { sec:"47", title:"Voting Rights", ch:"Ch 5 · Share Capital & Debentures", freq:3, cx:"Med", roi:"Good", note:"Equity votes on all, preference votes on matters affecting them — proportionate voting, frequently tested." },
+  { sec:"48", title:"Variation of Shareholders' Rights", ch:"Ch 5 · Share Capital & Debentures", freq:1, cx:"Med", roi:"Med", note:"3/4 consent of that class + SR — moderately complex, occasionally tested." },
+  { sec:"49", title:"Calls on Shares to be on Uniform Basis", ch:"Ch 5 · Share Capital & Debentures", freq:0, cx:"", roi:"", note:"Procedural — not tested independently." },
+  { sec:"50", title:"Advance Calls", ch:"Ch 5 · Share Capital & Debentures", freq:0, cx:"", roi:"", note:"Background provision." },
+  { sec:"51", title:"Payment of Dividend on Paid-Up Capital Only", ch:"Ch 5 · Share Capital & Debentures", freq:3, cx:"Low", roi:"Good", note:"Partly paid shares get proportionate dividend — simple but frequently tested MCQ/short answer." },
+  { sec:"52", title:"Securities Premium Account (SPA)", ch:"Ch 5 · Share Capital & Debentures", freq:3, cx:"Med", roi:"Good", note:"Uses of SPA — writing off preliminary expenses, bonus issue, buyback, discount on debentures. Frequently tested." },
+  { sec:"53", title:"Prohibition on Issue of Shares at Discount", ch:"Ch 5 · Share Capital & Debentures", freq:2, cx:"Low", roi:"Good", note:"Absolute bar + sweat equity exception — concise, good MCQ provision." },
+  { sec:"54", title:"Issue of Sweat Equity Shares", ch:"Ch 5 · Share Capital & Debentures", freq:2, cx:"Med", roi:"Good", note:"SR required, conditions, 15% limit, lock-in 3 years — moderately tested." },
+  { sec:"55", title:"Issue and Redemption of Preference Shares", ch:"Ch 5 · Share Capital & Debentures", freq:2, cx:"Med", roi:"Good", note:"20-year max, redemption from profits/fresh issue, CRR — tested regularly." },
+  { sec:"56", title:"Transfer and Transmission of Securities", ch:"Ch 5 · Share Capital & Debentures", freq:2, cx:"Med", roi:"Med", note:"SH-4 form, 15-day certificate delivery — procedural but tested." },
+  { sec:"57", title:"Punishment for Personation", ch:"Ch 5 · Share Capital & Debentures", freq:0, cx:"", roi:"", note:"Penalty provision — not independently tested." },
+  { sec:"58", title:"Refusal of Registration of Transfer/Transmission", ch:"Ch 5 · Share Capital & Debentures", freq:2, cx:"Med", roi:"Med", note:"30-day notice of refusal, appeal to Tribunal — tested occasionally." },
+  { sec:"59", title:"Rectification of Register of Members", ch:"Ch 5 · Share Capital & Debentures", freq:1, cx:"Low", roi:"Med", note:"NCLT power to rectify ROM — occasionally appears." },
+  { sec:"60", title:"Authorised, Subscribed and Paid-Up Capital", ch:"Ch 5 · Share Capital & Debentures", freq:0, cx:"", roi:"", note:"Definitions in notices/documents — background only." },
+  { sec:"61", title:"Alteration of Share Capital", ch:"Ch 5 · Share Capital & Debentures", freq:1, cx:"Low", roi:"Med", note:"OR for consolidation/sub-division/conversion — simple provision." },
+  { sec:"62", title:"Further Issue of Share Capital (Rights Issue / ESOP)", ch:"Ch 5 · Share Capital & Debentures", freq:4, cx:"High", roi:"Good", note:"Rights issue (15-day offer period), ESOP, private placement route — MUST DO. Appears every attempt." },
+  { sec:"63", title:"Issue of Bonus Shares", ch:"Ch 5 · Share Capital & Debentures", freq:2, cx:"Med", roi:"Good", note:"Conditions, sources (free reserves/SPA/CRR), no partly paid — frequently tested." },
+  { sec:"64", title:"Notice to Registrar of Alteration of Capital", ch:"Ch 5 · Share Capital & Debentures", freq:0, cx:"", roi:"", note:"Filing requirement — not independently tested." },
+  { sec:"65", title:"Unlimited Company to Provide for Reserve Share Capital", ch:"Ch 5 · Share Capital & Debentures", freq:0, cx:"", roi:"", note:"Niche provision — not tested." },
+  { sec:"66", title:"Reduction of Share Capital", ch:"Ch 5 · Share Capital & Debentures", freq:2, cx:"High", roi:"Med", note:"Tribunal approval, creditor protection, solvency statement — complex. Tested less frequently under new scheme." },
+  { sec:"67", title:"Restrictions on Purchase / Loan for Purchase of Own Shares", ch:"Ch 5 · Share Capital & Debentures", freq:1, cx:"Med", roi:"Med", note:"Company cannot give financial assistance for own share purchase — occasionally tested." },
+  { sec:"68", title:"Power of Company to Purchase its Own Securities (Buyback)", ch:"Ch 5 · Share Capital & Debentures", freq:3, cx:"High", roi:"Good", note:"10%/25% limits, Board vs SR, sources, conditions, 6-month cooling off — important, frequently tested." },
+  { sec:"69", title:"Transfer to Capital Redemption Reserve on Buyback", ch:"Ch 5 · Share Capital & Debentures", freq:2, cx:"Low", roi:"Good", note:"CRR creation equivalent to nominal value of shares bought back — tested alongside Sec 68." },
+  { sec:"70", title:"Prohibition on Buyback in Certain Cases", ch:"Ch 5 · Share Capital & Debentures", freq:1, cx:"Low", roi:"Med", note:"When buyback is prohibited — complements Sec 68." },
+  { sec:"71", title:"Debentures", ch:"Ch 5 · Share Capital & Debentures", freq:2, cx:"Med", roi:"Med", note:"Debenture trustee, DRR, redemption, convertible debentures — moderately tested." },
+  { sec:"72", title:"Power of Nomination", ch:"Ch 5 · Share Capital & Debentures", freq:2, cx:"Low", roi:"Med", note:"Nominee's rights on death of shareholder — short, sometimes MCQ." },
+  // CH 6 MEMBERSHIP
+  { sec:"88", title:"Register of Members (ROM)", ch:"Ch 6 · Membership", freq:1, cx:"Low", roi:"Med", note:"Contents, inspection, place of keeping — occasionally MCQ." },
+  { sec:"89", title:"Declaration of Beneficial Interest", ch:"Ch 6 · Membership", freq:0, cx:"", roi:"", note:"Beneficial ownership declaration — background." },
+  { sec:"90", title:"Register of Significant Beneficial Owners (SBO)", ch:"Ch 6 · Membership", freq:1, cx:"High", roi:"Med", note:"25% threshold, BEN-1 declaration — complex concept, occasionally asked." },
+  { sec:"91", title:"Power to Close Register of Members", ch:"Ch 6 · Membership", freq:1, cx:"Low", roi:"Med", note:"Max 30 days/year, newspaper notice — small companies exemption." },
+  { sec:"92", title:"Annual Return", ch:"Ch 6 · Membership", freq:2, cx:"Med", roi:"Good", note:"Contents of MGT-7, 60 days from AGM, CEO/CS/Director sign — moderately tested." },
+  { sec:"93", title:"Return to ROC for Change in Promoter's Stake", ch:"Ch 6 · Membership", freq:0, cx:"", roi:"", note:"Listed company specific — rarely tested." },
+  { sec:"94", title:"Place of Keeping Registers / Returns", ch:"Ch 6 · Membership", freq:0, cx:"", roi:"", note:"At RO or SR to keep elsewhere — procedural." },
+  { sec:"95", title:"Registers, Returns etc. to be Evidence", ch:"Ch 6 · Membership", freq:0, cx:"", roi:"", note:"Background provision." },
+  // CH 7 DEPOSITS
+  { sec:"73", title:"Prohibition on Acceptance of Deposits / Acceptance from Members", ch:"Ch 7 · Company Deposits", freq:3, cx:"Med", roi:"Good", note:"Eligible conditions, 35% limit, Form DPT-1, repayment — standard exam question." },
+  { sec:"74", title:"Repayment of Deposits Accepted Before 2013 Act", ch:"Ch 7 · Company Deposits", freq:0, cx:"", roi:"", note:"Transitional — not tested independently." },
+  { sec:"75", title:"Damages for Fraud (Deposits)", ch:"Ch 7 · Company Deposits", freq:0, cx:"", roi:"", note:"Penalty provision — not tested." },
+  { sec:"76", title:"Acceptance of Deposits from Public by Eligible Companies", ch:"Ch 7 · Company Deposits", freq:2, cx:"Med", roi:"Good", note:"Eligible company definition, credit rating, deposit insurance — tested alongside Sec 73." },
+  { sec:"76A", title:"Punishment for Contravention (Deposits)", ch:"Ch 7 · Company Deposits", freq:0, cx:"", roi:"", note:"Penalty — rarely tested independently." },
+  // CH 8 CHARGES
+  { sec:"77", title:"Duty to Register Charges (by Company)", ch:"Ch 8 · Registration of Charges", freq:3, cx:"Med", roi:"Good", note:"30-day window, CHG-1, consequences of non-registration — key section, frequently tested." },
+  { sec:"78", title:"Application for Registration of Charge (by Charge Holder)", ch:"Ch 8 · Registration of Charges", freq:1, cx:"Low", roi:"Med", note:"Charge holder can register if company fails — occasionally tested." },
+  { sec:"79", title:"Modification of Charge", ch:"Ch 8 · Registration of Charges", freq:1, cx:"Low", roi:"Med", note:"Same form CHG-1, 30-day window — basic provision." },
+  { sec:"80", title:"Notice of Charge (Constructive Notice / Public Document)", ch:"Ch 8 · Registration of Charges", freq:1, cx:"Low", roi:"Med", note:"Registered charge is public document — constructive notice concept." },
+  { sec:"81", title:"Register of Charges (ROC)", ch:"Ch 8 · Registration of Charges", freq:0, cx:"", roi:"", note:"ROC maintains register — procedural." },
+  { sec:"82", title:"Satisfaction of Charge (by Company)", ch:"Ch 8 · Registration of Charges", freq:1, cx:"Low", roi:"Med", note:"CHG-4 within 30 days of satisfaction — occasionally tested." },
+  { sec:"83", title:"Satisfaction of Charge (by Charge Holder)", ch:"Ch 8 · Registration of Charges", freq:0, cx:"", roi:"", note:"Background provision." },
+  { sec:"84", title:"Intimation When Receiver is Appointed", ch:"Ch 8 · Registration of Charges", freq:0, cx:"", roi:"", note:"Rarely tested independently." },
+  { sec:"85", title:"Company's Register of Charges", ch:"Ch 8 · Registration of Charges", freq:0, cx:"", roi:"", note:"Internal register — not tested independently." },
+  { sec:"86", title:"Penalty/Punishment for Contravention (Charges)", ch:"Ch 8 · Registration of Charges", freq:0, cx:"", roi:"", note:"Penalty provision." },
+  { sec:"87", title:"Power of Central Government to Extend Time for Registration", ch:"Ch 8 · Registration of Charges", freq:1, cx:"Low", roi:"Med", note:"Condonation of delay by CG — occasionally asked." },
+  // CH 9 MANAGEMENT
+  { sec:"96", title:"Annual General Meeting (AGM)", ch:"Ch 9 · Management & Administration", freq:3, cx:"Med", roi:"Good", note:"First AGM 9 months from close of FY, subsequent 6 months — timelines critical, very frequently tested." },
+  { sec:"97", title:"Power of NCLT to Call AGM", ch:"Ch 9 · Management & Administration", freq:0, cx:"", roi:"", note:"Rarely tested independently." },
+  { sec:"98", title:"Power of NCLT to Call EOGM", ch:"Ch 9 · Management & Administration", freq:0, cx:"", roi:"", note:"NCLT power on application — background." },
+  { sec:"99", title:"Penalty for Default in Holding AGM", ch:"Ch 9 · Management & Administration", freq:0, cx:"", roi:"", note:"Penalty provision." },
+  { sec:"100", title:"Calling of EOGM (Extraordinary General Meeting)", ch:"Ch 9 · Management & Administration", freq:3, cx:"Med", roi:"Good", note:"Who can call, member requisition (1/10th), 45-day rule, 3-month window — frequently tested." },
+  { sec:"101", title:"Notice of General Meeting", ch:"Ch 9 · Management & Administration", freq:2, cx:"Low", roi:"Good", note:"21 clear days, contents, shorter notice conditions — frequently tested procedural section." },
+  { sec:"102", title:"Statement to be Annexed to Notice (Explanatory Statement)", ch:"Ch 9 · Management & Administration", freq:3, cx:"Med", roi:"Good", note:"OB vs SB, what constitutes SB, consequences of omission — very frequently tested." },
+  { sec:"103", title:"Quorum for Meetings", ch:"Ch 9 · Management & Administration", freq:4, cx:"Low", roi:"Good", note:"Public: 5/15/30 based on members; Private: 2 — adjourned meeting rules — MUST DO, appears every attempt." },
+  { sec:"104", title:"Chairman of Meeting", ch:"Ch 9 · Management & Administration", freq:0, cx:"", roi:"", note:"Elected by show of hands — background provision." },
+  { sec:"105", title:"Proxies", ch:"Ch 9 · Management & Administration", freq:3, cx:"Med", roi:"Good", note:"48-hour deposit rule, proxy cannot speak, 50-member limit, revocation — frequently tested." },
+  { sec:"106", title:"Restrictions on Voting Rights", ch:"Ch 9 · Management & Administration", freq:2, cx:"Low", roi:"Med", note:"Calls in arrears → cannot vote — simple rule, MCQ favourite." },
+  { sec:"107", title:"Voting by Show of Hands", ch:"Ch 9 · Management & Administration", freq:1, cx:"Low", roi:"Med", note:"One member one vote — basic provision." },
+  { sec:"108", title:"Voting Through Electronic Means (e-Voting)", ch:"Ch 9 · Management & Administration", freq:1, cx:"Low", roi:"Med", note:"Mandatory for listed/1000+ members — occasionally MCQ." },
+  { sec:"109", title:"Demand for Poll", ch:"Ch 9 · Management & Administration", freq:1, cx:"Low", roi:"Med", note:"Who can demand, proportionate voting — occasionally asked." },
+  { sec:"110", title:"Postal Ballot", ch:"Ch 9 · Management & Administration", freq:1, cx:"Med", roi:"Med", note:"Mandatory items requiring postal ballot — occasionally tested." },
+  { sec:"111", title:"Circulation of Members' Resolution", ch:"Ch 9 · Management & Administration", freq:1, cx:"Low", roi:"Med", note:"1/20th members can circulate — occasionally asked." },
+  { sec:"112", title:"Representation of President/Governor at Meetings", ch:"Ch 9 · Management & Administration", freq:1, cx:"Low", roi:"Med", note:"Government companies — occasionally MCQ." },
+  { sec:"113", title:"Representation of Body Corporate", ch:"Ch 9 · Management & Administration", freq:0, cx:"", roi:"", note:"Authorised representative — background." },
+  { sec:"114", title:"Ordinary and Special Resolutions", ch:"Ch 9 · Management & Administration", freq:3, cx:"Low", roi:"Good", note:"Simple majority vs 3/4 majority — when SR required — very frequently tested in MCQs and theory." },
+  { sec:"115", title:"Special Notice", ch:"Ch 9 · Management & Administration", freq:1, cx:"Low", roi:"Med", note:"14-day notice from member, 21-day company notice — occasionally tested." },
+  { sec:"116", title:"Resolutions Passed at Adjourned Meetings", ch:"Ch 9 · Management & Administration", freq:0, cx:"", roi:"", note:"Date of passing at adjourned meeting — rarely tested." },
+  { sec:"117", title:"Resolutions and Agreements to be Filed (MGT-14)", ch:"Ch 9 · Management & Administration", freq:1, cx:"Low", roi:"Med", note:"Within 30 days, list of resolutions requiring filing — occasionally tested." },
+  { sec:"118", title:"Minutes of Meetings", ch:"Ch 9 · Management & Administration", freq:1, cx:"Low", roi:"Med", note:"30 days to record, chairman signs at next meeting — standard theory." },
+  { sec:"119", title:"Inspection of Minute Books of General Meetings", ch:"Ch 9 · Management & Administration", freq:0, cx:"", roi:"", note:"Inspection right — procedural." },
+  { sec:"120", title:"Maintenance of Records in Electronic Form", ch:"Ch 9 · Management & Administration", freq:0, cx:"", roi:"", note:"Background provision." },
+  { sec:"121", title:"Report on AGM (Listed Companies)", ch:"Ch 9 · Management & Administration", freq:0, cx:"", roi:"", note:"Listed company obligation — rarely tested." },
+  { sec:"122", title:"Applicability to OPC", ch:"Ch 9 · Management & Administration", freq:0, cx:"", roi:"", note:"OPC exemptions from meeting requirements — background." },
+  // CH 10 DIVIDEND
+  { sec:"123", title:"Declaration and Payment of Dividend", ch:"Ch 10 · Declaration & Payment of Dividend", freq:4, cx:"Med", roi:"Good", note:"Conditions, free reserves, interim dividend rules, depreciation first — MUST DO, appears every attempt." },
+  { sec:"124", title:"Unpaid Dividend Account (UDA)", ch:"Ch 10 · Declaration & Payment of Dividend", freq:3, cx:"Med", roi:"Good", note:"Transfer within 7 days of 30-day unpaid period to UDA — timelines critical, frequently tested." },
+  { sec:"125", title:"Investor Education and Protection Fund (IEPF)", ch:"Ch 10 · Declaration & Payment of Dividend", freq:1, cx:"Med", roi:"Med", note:"7 years unpaid → IEPF, refund process — occasionally tested." },
+  { sec:"126", title:"Right to Dividend to be Held in Abeyance", ch:"Ch 10 · Declaration & Payment of Dividend", freq:0, cx:"", roi:"", note:"Disputed transfer — background provision." },
+  { sec:"127", title:"Punishment for Failure to Distribute Dividend", ch:"Ch 10 · Declaration & Payment of Dividend", freq:3, cx:"Low", roi:"Good", note:"Within 30 days, penalty on directors — concise, very frequently asked." },
+  // CH 11 ACCOUNTS
+  { sec:"128", title:"Books of Account to be Kept by Company", ch:"Ch 11 · Accounts of Companies", freq:3, cx:"Low", roi:"Good", note:"8-year preservation, accrual basis, double entry, place of keeping — very frequently tested." },
+  { sec:"129", title:"Financial Statement", ch:"Ch 11 · Accounts of Companies", freq:3, cx:"Med", roi:"Good", note:"True & fair view, Schedule III, CFS requirement, subsidiary-wise statement — regularly tested." },
+  { sec:"129A", title:"Periodical Financial Results (Unlisted Companies)", ch:"Ch 11 · Accounts of Companies", freq:0, cx:"", roi:"", note:"Recent amendment — background provision." },
+  { sec:"130", title:"Re-opening of Accounts on Court/Tribunal's Order", ch:"Ch 11 · Accounts of Companies", freq:1, cx:"Low", roi:"Med", note:"Fraud/mismanagement — NCLT/Court order required, occasionally tested." },
+  { sec:"131", title:"Voluntary Revision of Financial Statements / Board's Report", ch:"Ch 11 · Accounts of Companies", freq:1, cx:"Low", roi:"Med", note:"Tribunal permission, once per FY — simple provision." },
+  { sec:"132", title:"National Financial Reporting Authority (NFRA)", ch:"Ch 11 · Accounts of Companies", freq:2, cx:"Med", roi:"Med", note:"Constitution, functions, power to investigate auditors — theory question." },
+  { sec:"133", title:"Central Government to Prescribe Accounting Standards", ch:"Ch 11 · Accounts of Companies", freq:0, cx:"", roi:"", note:"Enabling provision — not tested independently." },
+  { sec:"134", title:"Financial Statement, Board's Report etc.", ch:"Ch 11 · Accounts of Companies", freq:1, cx:"Med", roi:"Med", note:"Directors' responsibility statement contents, Board report contents — theory." },
+  { sec:"135", title:"Corporate Social Responsibility (CSR)", ch:"Ch 11 · Accounts of Companies", freq:4, cx:"Med", roi:"Good", note:"Net profit threshold (₹5Cr/turnover ₹1000Cr/networth ₹500Cr), 2% rule, CSR committee, unspent amount — MUST DO." },
+  { sec:"136", title:"Right of Member to Copies of Audited Financial Statement", ch:"Ch 11 · Accounts of Companies", freq:0, cx:"", roi:"", note:"Member's inspection right — procedural." },
+  { sec:"137", title:"Copy of Financial Statement to be Filed with Registrar", ch:"Ch 11 · Accounts of Companies", freq:2, cx:"Low", roi:"Med", note:"30 days from AGM — timeline-based question." },
+  { sec:"138", title:"Internal Audit", ch:"Ch 11 · Accounts of Companies", freq:2, cx:"Low", roi:"Good", note:"Mandatory for certain class of companies — concise provision, decent ROI." },
+  // CH 12 AUDIT
+  { sec:"139", title:"Appointment of Auditors", ch:"Ch 12 · Audit & Auditors", freq:4, cx:"High", roi:"Good", note:"First auditor (30 days BM / 90 days EGM), subsequent (AGM, 5+5 rotation), Govt company — MUST DO. Note: 12–18 marks." },
+  { sec:"140", title:"Removal, Resignation of Auditor and Giving of Special Notice", ch:"Ch 12 · Audit & Auditors", freq:3, cx:"High", roi:"Good", note:"SR for removal, CG approval within 30 days, resignation to ROC within 30 days — nuanced, frequently tested." },
+  { sec:"141", title:"Eligibility, Qualifications and Disqualifications of Auditor", ch:"Ch 12 · Audit & Auditors", freq:3, cx:"Med", roi:"Good", note:"Who cannot be auditor — 20-company limit, relative employed, debtor etc. — disqualification list is exam favourite." },
+  { sec:"142", title:"Remuneration of Auditors", ch:"Ch 12 · Audit & Auditors", freq:0, cx:"", roi:"", note:"Fixed by appointing authority — not independently tested." },
+  { sec:"143", title:"Powers and Duties of Auditors / Auditor's Report", ch:"Ch 12 · Audit & Auditors", freq:4, cx:"High", roi:"Good", note:"Access rights, inquiry duties, CARO, reporting to CG on fraud — MUST DO. 'Kuch bhi aa sakta hai'." },
+  { sec:"144", title:"Auditor Not to Render Certain Services", ch:"Ch 12 · Audit & Auditors", freq:1, cx:"Med", roi:"Med", note:"Prohibited services list — important concept, occasionally tested." },
+  { sec:"145", title:"Auditor to Sign Audit Report", ch:"Ch 12 · Audit & Auditors", freq:0, cx:"", roi:"", note:"Compliance provision — MCQ only." },
+  { sec:"146", title:"Auditors to Attend General Meeting", ch:"Ch 12 · Audit & Auditors", freq:0, cx:"", roi:"", note:"Right to attend, not obligatory — rarely tested." },
+  { sec:"147", title:"Punishment for Contravention (Audit)", ch:"Ch 12 · Audit & Auditors", freq:2, cx:"Low", roi:"Med", note:"Penalties on auditors for contravention — sometimes tested alongside Sec 143." },
+  { sec:"148", title:"Central Government to Specify Audit of Cost Accounts", ch:"Ch 12 · Audit & Auditors", freq:0, cx:"", roi:"", note:"Marked ✗ in notes — skip." },
+  // CH 13 FOREIGN COMPANIES
+  { sec:"379", title:"Application of Act to Foreign Companies", ch:"Ch 13 · Companies Incorporated Outside India", freq:3, cx:"Med", roi:"Good", note:"50% Indian-held foreign company must comply as if incorporated in India — Sec 2(42) definition — very frequently tested." },
+  { sec:"380", title:"Documents to be Delivered to Registrar by Foreign Companies", ch:"Ch 13 · Companies Incorporated Outside India", freq:2, cx:"Med", roi:"Good", note:"List of documents to be filed within 30 days of establishing place of business in India — moderately tested." },
+  { sec:"381", title:"Accounts of Foreign Company", ch:"Ch 13 · Companies Incorporated Outside India", freq:1, cx:"Low", roi:"Med", note:"P&L and BS of Indian business — occasionally tested." },
+  { sec:"382", title:"Display of Name and Country of Incorporation", ch:"Ch 13 · Companies Incorporated Outside India", freq:1, cx:"Low", roi:"Med", note:"Must display name + country of origin outside every office — occasionally MCQ." },
+  { sec:"383", title:"Service on Foreign Company", ch:"Ch 13 · Companies Incorporated Outside India", freq:0, cx:"", roi:"", note:"Service of documents — procedural." },
+  { sec:"384", title:"Debentures, Annual Return, Registration of Charges etc.", ch:"Ch 13 · Companies Incorporated Outside India", freq:1, cx:"Low", roi:"Med", note:"Foreign company obligations for debentures, charges, books — occasionally tested." },
+  { sec:"385", title:"Fee for Registration of Documents", ch:"Ch 13 · Companies Incorporated Outside India", freq:0, cx:"", roi:"", note:"Fee provision — not tested." },
+  { sec:"386", title:"Interpretation (Foreign Companies Chapter)", ch:"Ch 13 · Companies Incorporated Outside India", freq:1, cx:"Low", roi:"Med", note:"Definitions specific to this chapter — occasionally MCQ." },
+  { sec:"387", title:"Dating of Prospectus by Foreign Company", ch:"Ch 13 · Companies Incorporated Outside India", freq:0, cx:"", roi:"", note:"Rarely tested." },
+  { sec:"388", title:"Provisions as to Expert's Consent and Allotment", ch:"Ch 13 · Companies Incorporated Outside India", freq:0, cx:"", roi:"", note:"Background provision." },
+  { sec:"389", title:"Registration of Prospectus (Foreign Company)", ch:"Ch 13 · Companies Incorporated Outside India", freq:0, cx:"", roi:"", note:"Rarely tested." },
+  { sec:"390", title:"Offer of Indian Depository Receipts (IDR)", ch:"Ch 13 · Companies Incorporated Outside India", freq:2, cx:"Med", roi:"Med", note:"Foreign company can raise money in India via IDR — moderately tested as short theory question." },
+  { sec:"391", title:"Application of Sections 34–36 and Chapter XX", ch:"Ch 13 · Companies Incorporated Outside India", freq:0, cx:"", roi:"", note:"Application provision — background." },
+  { sec:"392", title:"Punishment for Contravention (Foreign Companies)", ch:"Ch 13 · Companies Incorporated Outside India", freq:1, cx:"Low", roi:"Med", note:"Penalty for non-compliance — occasionally tested alongside Sec 379." },
+  { sec:"393", title:"Non-Compliance Does Not Affect Validity of Contracts", ch:"Ch 13 · Companies Incorporated Outside India", freq:0, cx:"", roi:"", note:"Saving provision — background." },
+];
+
+const other = [
+  // GCA
+  { sec:"GCA-1", title:"Short Title, Extent & Commencement", ch:"Other Laws · General Clauses Act 1897", freq:0, cx:"", roi:"", note:"Background provision — not tested independently." },
+  { sec:"GCA-3", title:"General Definitions", ch:"Other Laws · General Clauses Act 1897", freq:4, cx:"Low", roi:"Good", note:"'Person', 'month', 'year', 'immovable property', 'will', 'document', 'Government' etc. — MUST DO. MCQ goldmine." },
+  { sec:"GCA-6", title:"Effect of Repeal (Saving of Accrued Rights)", ch:"Other Laws · General Clauses Act 1897", freq:3, cx:"Med", roi:"Good", note:"Rights/liabilities accrued before repeal are not extinguished — very important concept, frequently tested." },
+  { sec:"GCA-7", title:"Revival of Repealed Enactments", ch:"Other Laws · General Clauses Act 1897", freq:1, cx:"Low", roi:"Med", note:"Repeal of repealing Act does not revive original — occasionally tested." },
+  { sec:"GCA-8", title:"Construction of Statutory Instruments After Repeal", ch:"Other Laws · General Clauses Act 1897", freq:0, cx:"", roi:"", note:"Technical provision." },
+  { sec:"GCA-9", title:"Commencement and Termination of Time", ch:"Other Laws · General Clauses Act 1897", freq:2, cx:"Low", roi:"Good", note:"Exclusive/inclusive rule for reckoning time — concise, frequently asked as MCQ." },
+  { sec:"GCA-10", title:"Computation of Time (When Last Day is Holiday)", ch:"Other Laws · General Clauses Act 1897", freq:3, cx:"Low", roi:"Good", note:"If last day falls on holiday, extend to next working day — frequently tested in application questions." },
+  { sec:"GCA-13", title:"Masculine/Singular Words to Include Feminine/Plural", ch:"Other Laws · General Clauses Act 1897", freq:2, cx:"Low", roi:"Good", note:"Gender and number rules — simple provision, MCQ favourite." },
+  { sec:"GCA-14", title:"Powers Conferred to be Exercisable from Time to Time", ch:"Other Laws · General Clauses Act 1897", freq:1, cx:"Low", roi:"Med", note:"Power once conferred can be exercised repeatedly — occasionally tested." },
+  { sec:"GCA-16", title:"Power to Appoint Includes Power to Suspend/Remove", ch:"Other Laws · General Clauses Act 1897", freq:2, cx:"Low", roi:"Good", note:"Important principle — power to appoint includes ancillary powers. Frequently MCQ." },
+  { sec:"GCA-17", title:"Substitution of Functionary (Change of Officer)", ch:"Other Laws · General Clauses Act 1897", freq:1, cx:"Low", roi:"Med", note:"Successor officer continues acts of predecessor — occasionally tested." },
+  { sec:"GCA-21", title:"Power to Issue Orders, Rules etc.", ch:"Other Laws · General Clauses Act 1897", freq:1, cx:"Low", roi:"Med", note:"Power to make includes power to amend/rescind — occasionally tested." },
+  { sec:"GCA-22", title:"Making of Rules After Previous Publication", ch:"Other Laws · General Clauses Act 1897", freq:0, cx:"", roi:"", note:"Procedural provision." },
+  { sec:"GCA-27", title:"Meaning of Service by Post", ch:"Other Laws · General Clauses Act 1897", freq:3, cx:"Low", roi:"Good", note:"Properly addressed letter = deemed served when delivered in ordinary course — very frequently asked." },
+  // INTERPRETATION OF STATUTES
+  { sec:"IS-1", title:"Literal Rule of Interpretation", ch:"Other Laws · Interpretation of Statutes", freq:4, cx:"Low", roi:"Good", note:"Plain/ordinary/grammatical meaning — MUST DO. Most basic rule, always asked." },
+  { sec:"IS-2", title:"Golden Rule of Interpretation", ch:"Other Laws · Interpretation of Statutes", freq:4, cx:"Low", roi:"Good", note:"Modify literal meaning to avoid absurdity — MUST DO alongside Literal rule." },
+  { sec:"IS-3", title:"Mischief Rule (Heydon's Case)", ch:"Other Laws · Interpretation of Statutes", freq:3, cx:"Med", roi:"Good", note:"What mischief the Act was meant to remedy — 4 questions from Heydon's case — frequently tested." },
+  { sec:"IS-4", title:"Rule of Harmonious Construction", ch:"Other Laws · Interpretation of Statutes", freq:3, cx:"Med", roi:"Good", note:"Avoid conflict between provisions, give effect to all — frequently tested." },
+  { sec:"IS-5", title:"Ejusdem Generis Rule", ch:"Other Laws · Interpretation of Statutes", freq:3, cx:"Med", roi:"Good", note:"General words follow specific words — must be of same class — very frequently tested in theory." },
+  { sec:"IS-6", title:"Expressio Unius Est Exclusio Alterius", ch:"Other Laws · Interpretation of Statutes", freq:2, cx:"Med", roi:"Good", note:"Express mention of one thing excludes others — moderately tested." },
+  { sec:"IS-7", title:"Noscitur a Sociis", ch:"Other Laws · Interpretation of Statutes", freq:2, cx:"Med", roi:"Med", note:"Word known by its associates — occasionally tested." },
+  { sec:"IS-8", title:"Internal Aids — Preamble, Title, Headings, Proviso, Explanation", ch:"Other Laws · Interpretation of Statutes", freq:3, cx:"Med", roi:"Good", note:"Each internal aid and its role — preamble, headings, marginal notes, provisos — frequently asked." },
+  { sec:"IS-9", title:"External Aids — Legislative History, Dictionaries, Foreign Decisions", ch:"Other Laws · Interpretation of Statutes", freq:2, cx:"Med", roi:"Med", note:"Parliamentary debates, statement of objects, dictionaries — moderately tested." },
+  { sec:"IS-10", title:"Construction of Deeds and Documents", ch:"Other Laws · Interpretation of Statutes", freq:2, cx:"Med", roi:"Med", note:"Rules specific to interpreting deeds vs statutes — moderately tested." },
+  { sec:"IS-11", title:"Strict and Liberal Construction", ch:"Other Laws · Interpretation of Statutes", freq:2, cx:"Low", roi:"Med", note:"Penal statutes strictly, beneficial statutes liberally — frequently MCQ." },
+  { sec:"IS-12", title:"Retrospective Operation of Statutes", ch:"Other Laws · Interpretation of Statutes", freq:1, cx:"Med", roi:"Med", note:"Statutes presumed prospective unless express intent — occasionally tested." },
+  // FEMA
+  { sec:"FEMA-2", title:"Definitions (Person Resident in India, Capital A/c, Current A/c etc.)", ch:"Other Laws · FEMA 1999", freq:4, cx:"Med", roi:"Good", note:"MUST DO. 'Person resident in India' — 182-day rule, intent test — appears every attempt." },
+  { sec:"FEMA-3", title:"Dealing in Foreign Exchange", ch:"Other Laws · FEMA 1999", freq:2, cx:"Med", roi:"Good", note:"Only through authorised person — basic enabling provision, moderately tested." },
+  { sec:"FEMA-4", title:"Holding of Foreign Exchange", ch:"Other Laws · FEMA 1999", freq:1, cx:"Low", roi:"Med", note:"Resident can hold foreign exchange acquired legitimately — occasionally MCQ." },
+  { sec:"FEMA-5", title:"Current Account Transactions", ch:"Other Laws · FEMA 1999", freq:4, cx:"High", roi:"Good", note:"Permitted freely unless prohibited — Schedule I/II/III restrictions — MUST DO. Very frequently tested." },
+  { sec:"FEMA-6", title:"Capital Account Transactions", ch:"Other Laws · FEMA 1999", freq:4, cx:"High", roi:"Good", note:"Permissible only if specified by RBI — prohibited list — MUST DO alongside Sec 5." },
+  { sec:"FEMA-7", title:"Export of Goods and Services", ch:"Other Laws · FEMA 1999", freq:2, cx:"Med", roi:"Good", note:"Declaration requirement, realisation and repatriation of export proceeds — moderately tested." },
+  { sec:"FEMA-8", title:"Realisation and Repatriation of Foreign Exchange", ch:"Other Laws · FEMA 1999", freq:2, cx:"Med", roi:"Med", note:"Obligation to realise and repatriate — occasionally tested." },
+  { sec:"FEMA-9", title:"Exemption from Realisation and Repatriation", ch:"Other Laws · FEMA 1999", freq:1, cx:"Low", roi:"Med", note:"RBI exemptions — occasionally MCQ." },
+  { sec:"FEMA-10", title:"Authorised Person", ch:"Other Laws · FEMA 1999", freq:2, cx:"Med", roi:"Good", note:"Who is authorised person, RBI authorisation — moderately tested." },
+  { sec:"FEMA-11", title:"Duty of Authorised Person to Comply with RBI Directions", ch:"Other Laws · FEMA 1999", freq:1, cx:"Low", roi:"Med", note:"Compliance obligation — occasionally MCQ." },
+  { sec:"FEMA-13", title:"Penalties", ch:"Other Laws · FEMA 1999", freq:2, cx:"Med", roi:"Med", note:"Up to 3x amount involved — moderately tested with Sec 15 compounding." },
+  { sec:"FEMA-15", title:"Compounding of Contraventions", ch:"Other Laws · FEMA 1999", freq:2, cx:"Med", roi:"Med", note:"Settlement without adjudication — moderately tested." },
+  // LLP
+  { sec:"LLP-2", title:"Definitions (Body Corporate, Business, Designated Partner, LLP, Partner)", ch:"Other Laws · LLP Act 2008", freq:3, cx:"Low", roi:"Good", note:"Key definitions distinguishing LLP from company/partnership — very frequently tested in MCQ." },
+  { sec:"LLP-3", title:"LLP is a Body Corporate (Separate Legal Entity)", ch:"Other Laws · LLP Act 2008", freq:3, cx:"Low", roi:"Good", note:"Separate legal entity, perpetual succession, own property — parallel to Salomon principle. Frequently tested." },
+  { sec:"LLP-4", title:"Partners of LLP", ch:"Other Laws · LLP Act 2008", freq:2, cx:"Low", roi:"Med", note:"Any person/body corporate can be partner, minimum 2 — basic provision." },
+  { sec:"LLP-5", title:"Minimum Number of Partners", ch:"Other Laws · LLP Act 2008", freq:1, cx:"Low", roi:"Med", note:"At least 2 partners at all times — occasionally tested." },
+  { sec:"LLP-6", title:"Minimum Number of Designated Partners", ch:"Other Laws · LLP Act 2008", freq:2, cx:"Low", roi:"Good", note:"At least 2 DPs, at least one resident in India — frequently MCQ." },
+  { sec:"LLP-7", title:"Designated Partners", ch:"Other Laws · LLP Act 2008", freq:3, cx:"Med", roi:"Good", note:"Who can be DP, DPIN requirement, responsibilities — frequently tested." },
+  { sec:"LLP-8", title:"Liability of LLP and Partners", ch:"Other Laws · LLP Act 2008", freq:4, cx:"Med", roi:"Good", note:"LLP liable for its own acts, partner not personally liable for others' wrongful acts — MUST DO core concept." },
+  { sec:"LLP-9", title:"Obligations of Partners (Agency of LLP)", ch:"Other Laws · LLP Act 2008", freq:1, cx:"Low", roi:"Med", note:"Each partner is agent of LLP, not of other partners — important distinction from partnership." },
+  { sec:"LLP-10", title:"LLP Agreement", ch:"Other Laws · LLP Act 2008", freq:3, cx:"Med", roi:"Good", note:"Contents, default provisions in Schedule I, filing of agreement — frequently tested." },
+  { sec:"LLP-11", title:"Incorporation of LLP", ch:"Other Laws · LLP Act 2008", freq:2, cx:"Low", roi:"Med", note:"Incorporation document, registration with ROC — moderately tested." },
+  { sec:"LLP-12", title:"Incorporation Document", ch:"Other Laws · LLP Act 2008", freq:1, cx:"Low", roi:"Med", note:"Contents of incorporation document — occasionally tested." },
+  { sec:"LLP-13", title:"Effect of Registration (Certificate of Incorporation)", ch:"Other Laws · LLP Act 2008", freq:2, cx:"Low", roi:"Med", note:"Certificate is conclusive evidence — parallel to Sec 9 of Companies Act." },
+  { sec:"LLP-14", title:"Name of LLP", ch:"Other Laws · LLP Act 2008", freq:2, cx:"Low", roi:"Med", note:"Must end with 'LLP' or 'Limited Liability Partnership' — frequently MCQ." },
+  { sec:"LLP-17", title:"Conversion of Partnership to LLP", ch:"Other Laws · LLP Act 2008", freq:3, cx:"Med", roi:"Good", note:"Conditions for conversion, effect on assets/liabilities — frequently tested." },
+  { sec:"LLP-18", title:"Conversion of Private Company to LLP", ch:"Other Laws · LLP Act 2008", freq:3, cx:"Med", roi:"Good", note:"Conditions (no security interest outstanding etc.) — frequently tested alongside Sec 17." },
+  { sec:"LLP-20", title:"Unlimited Liability in Case of Fraud", ch:"Other Laws · LLP Act 2008", freq:2, cx:"Med", roi:"Good", note:"Exception to limited liability — unlimited liability for fraud — important concept." },
+  { sec:"LLP-23", title:"Partner Ceasing to be a Partner", ch:"Other Laws · LLP Act 2008", freq:1, cx:"Low", roi:"Med", note:"Retirement, death, dissolution — occasionally tested." },
+  { sec:"LLP-24", title:"Rights of Outgoing Partner", ch:"Other Laws · LLP Act 2008", freq:1, cx:"Low", roi:"Med", note:"Rights to share in property — occasionally MCQ." },
+  { sec:"LLP-25", title:"Winding Up and Dissolution of LLP", ch:"Other Laws · LLP Act 2008", freq:2, cx:"Med", roi:"Med", note:"Voluntary vs tribunal winding up, grounds — moderately tested." },
+];
+
+let currentTab = 'corporate';
+let openCard = null;
+
+function getFreqKey(f) { return Math.min(Math.max(f,0),4); }
+
+function switchTab(tab, btn) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  openCard = null;
+  populateChFilter();
+  render();
+}
+
+function populateChFilter() {
+  const data = currentTab === 'corporate' ? corporate : other;
+  const sel = document.getElementById('chFilter');
+  const chapters = ['all', ...Array.from(new Set(data.map(s => s.ch)))];
+  sel.innerHTML = chapters.map(c => `<option value="${c}">${c === 'all' ? 'All Chapters' : c}</option>`).join('');
+}
+
+function render() {
+  const data = currentTab === 'corporate' ? corporate : other;
+  const search = document.getElementById('search').value.toLowerCase();
+  const freqVal = document.getElementById('freqFilter').value;
+  const chVal = document.getElementById('chFilter').value;
+
+  let sorted = [...data].sort((a,b) => b.freq - a.freq);
+
+  let filtered = sorted.filter(s => {
+    const fk = getFreqKey(s.freq);
+    const fOk = freqVal === 'all' || String(fk) === freqVal;
+    const cOk = chVal === 'all' || s.ch === chVal;
+    const sOk = !search || s.title.toLowerCase().includes(search) || String(s.sec).toLowerCase().includes(search);
+    return fOk && cOk && sOk;
+  });
+
+  document.getElementById('count').textContent = `Showing ${filtered.length} of ${data.length} sections · sorted by frequency`;
+
+  const list = document.getElementById('card-list');
+  list.innerHTML = filtered.map((s, i) => {
+    const fk = getFreqKey(s.freq);
+    const fc = FREQ[fk];
+    const isOpen = openCard === `${s.sec}-${currentTab}`;
+
+    const cxTag = s.cx ? `<span class="tag cx-${s.cx}">${s.cx}</span>` : '';
+    const roiTag = s.roi ? `<span class="tag roi-${s.roi}">${s.roi} ROI</span>` : '';
+    const freqTag = `<span class="freq-tag" style="color:${fc.color};border-color:${fc.color};background:${fc.bg}22">${fc.label}</span>`;
+
+    return `
+      <div class="card" id="card-${s.sec}-${currentTab}"
+        style="background:#1a1a1a;border-color:${fc.border}33;border-left-color:${fc.color}"
+        onclick="toggleCard('${s.sec}')">
+        <div class="card-row">
+          <span class="card-rank">#${i+1}</span>
+          <span class="sec-badge" style="background:${fc.bg};color:${fc.color}">Sec ${s.sec}</span>
+          <span class="card-title">${s.title}</span>
+          <div class="tags">${cxTag}${roiTag}${freqTag}</div>
+          <span class="arrow">${isOpen ? '▲' : '▼'}</span>
+        </div>
+        <div class="card-detail ${isOpen ? 'open' : ''}">
+          <div class="detail-ch">${s.ch}</div>
+          <div class="detail-note">${s.note}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleCard(sec) {
+  const key = `${sec}-${currentTab}`;
+  openCard = openCard === key ? null : key;
+  render();
+  if (openCard) {
+    setTimeout(() => {
+      const el = document.getElementById(`card-${sec}-${currentTab}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 50);
+  }
+}
+
+// Init
+populateChFilter();
+render();
+</script>
+</body>
+</html>
